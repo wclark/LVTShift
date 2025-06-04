@@ -62,17 +62,22 @@ def get_census_data(fips_code: str, year: int = 2022, api_key: str = None) -> pd
         'B01003_001E': 'total_pop',
         'B03002_003E': 'white_pop',
         'B03002_004E': 'black_pop',
-        'B03002_012E': 'hispanic_pop'
+        'B03002_012E': 'hispanic_pop',
+        'block group': 'census_block_group'  # Rename block group to census_block_group
     })
 
     # Create GEOID for block groups (state+county+tract+block group)
     df['state_fips'] = df['state']
     df['county_fips'] = df['county']
     df['tract_fips'] = df['tract']
-    df['bg_fips'] = df['block group']
+    df['bg_fips'] = df['census_block_group']  # Use renamed column
 
     # Create standardized GEOID
     df['std_geoid'] = df['state_fips'] + df['county_fips'] + df['tract_fips'] + df['bg_fips']
+
+    # Calculate minority and black percentages
+    df['minority_pct'] = ((df['total_pop'] - df['white_pop']) / df['total_pop'] * 100).round(2)
+    df['black_pct'] = (df['black_pop'] / df['total_pop'] * 100).round(2)
 
     return df
 
