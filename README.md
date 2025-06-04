@@ -1,6 +1,6 @@
 # LVTShift
 
-**LVTShift** is a toolkit for modeling Land Value Tax (LVT) shifts in counties across the United States. It provides utilities for fetching, processing, and analyzing parcel, tax, and census data, and includes examp!e workflows for real-world counties.
+**LVTShift** is a toolkit for modeling Land Value Tax (LVT) shifts in counties across the United States. It provides utilities for fetching, processing, and analyzing parcel, tax, and census data, and includes examp!e workflows for real-world counties. LVTShift is created and maintained by the Center for Land Economics (landeconomics.org[landeconomics.org])
 
 ## Features
 
