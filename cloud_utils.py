@@ -3,6 +3,91 @@ import pandas as pd
 from io import BytesIO
 from datetime import datetime
 import json
+from shapely.geometry import Polygon
+import geopandas as gpd
+from azure.storage.blob import BlobServiceClient
+
+def get_feature_data_with_geometry(dataset_name, base_url,layer_id=0):
+    """Get all features from a service including geometry with pagination"""
+    url = f"{base_url}/{dataset_name}/FeatureServer/{layer_id}/query"
+    
+    # First, get the count of all features
+    count_params = {
+        'f': 'json',
+        'where': '1=1',
+        'returnCountOnly': 'true'
+    }
+    
+    try:
+        count_response = requests.get(url, params=count_params)
+        count_response.raise_for_status()
+        total_records = count_response.json().get('count', 0)
+        
+        print(f"Total records in {dataset_name}: {total_records}")
+        
+        # Now fetch the actual data in chunks
+        all_features = []
+        offset = 0
+        chunk_size = 2000  # ArcGIS typically limits to 2000 records per request
+        
+        while offset < total_records:
+            params = {
+                'f': 'json',
+                'where': '1=1',
+                'outFields': '*',
+                'returnGeometry': 'true',
+                'geometryPrecision': 6,
+                'resultOffset': offset,
+                'resultRecordCount': chunk_size
+            }
+            
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            if 'features' in data:
+                # Convert ESRI features to GeoDataFrame format
+                for feature in data['features']:
+                    # Extract attributes
+                    attributes = feature['attributes']
+                    
+                    # Convert ESRI rings to Shapely polygon
+                    if feature['geometry'] and 'rings' in feature['geometry']:
+                        # Take the first ring (exterior ring)
+                        ring = feature['geometry']['rings'][0]
+                        # Create Shapely polygon
+                        polygon = Polygon(ring)
+                        
+                        # Combine attributes and geometry
+                        attributes['geometry'] = polygon
+                        all_features.append(attributes)
+                
+                print(f"Fetched records {offset} to {offset + len(data['features'])} of {total_records}")
+                
+                if len(data['features']) < chunk_size:
+                    break
+                    
+                offset += chunk_size
+            else:
+                print(f"No features found in response for {dataset_name}")
+                break
+        
+        if all_features:
+            # Create GeoDataFrame
+            gdf = gpd.GeoDataFrame(all_features, crs='EPSG:3857')  # Web Mercator
+            
+            # Convert to WGS84
+            gdf = gdf.to_crs('EPSG:4326')
+            
+            return gdf
+        
+        return None
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data from {dataset_name}: {e}")
+        return None
+
+
 def get_feature_data(dataset_name, base_url, layer_id=0):
     """
     Get all features from a service using pagination
