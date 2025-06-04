@@ -28,6 +28,3 @@
    ```
 
 ## File Structure
-
-
-[clelogo](https://github.com/user-attachments/assets/56c1e371-2677-49b0-bc7f-bdb5c663ebb3)
